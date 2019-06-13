@@ -42,6 +42,16 @@ int __openat_real(int, const char*, int, ...) __RENAME(openat);
 #define __open_too_many_args_error "too many arguments"
 #define __open_too_few_args_error "called with O_CREAT or O_TMPFILE, but missing mode"
 #define __open_useless_modes_warning "has superfluous mode bits; missing O_CREAT?"
+/* Support kernels without O_TMPFILE */
+#ifndef O_TMPFILE
+#define __CREATED_O_TMPFILE
+#ifndef __O_TMPFILE
+#define __CREATED__O_TMPFILE
+#define __O_TMPFILE 020000000
+#endif
+#define O_TMPFILE (__O_TMPFILE | O_DIRECTORY)
+#define O_TMPFILE_MASK (__O_TMPFILE | O_DIRECTORY | O_CREAT)
+#endif
 /* O_TMPFILE shares bits with O_DIRECTORY. */
 #define __open_modes_useful(flags) (((flags) & O_CREAT) || ((flags) & O_TMPFILE) == O_TMPFILE)
 #if defined(__clang__)
@@ -143,4 +153,15 @@ int openat(int dirfd, const char* pathname, int flags, ...) {
 #undef __open_too_few_args_error
 #undef __open_useless_modes_warning
 #undef __open_modes_useful
+
+/* Clean up O_TMPFILE definitions if the kernel does not support it */
+#ifdef __CREATED_O_TMPFILE
+#undef __CREATED_O_TMPFILE
+#undef O_TMPFILE
+#undef O_TMPFILE_MASK
+#ifdef __CREATED__O_TMPFILE
+#undef __O_TMPFILE
+#endif
+#endif
+
 #endif /* defined(__BIONIC_FORTIFY) */
